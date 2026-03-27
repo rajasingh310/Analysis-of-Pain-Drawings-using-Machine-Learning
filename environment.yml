@@ -1,0 +1,17 @@
+name: classification_env
+channels:
+  - nvidia
+  - pytorch
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - numpy=1.24
+  - pyyaml
+  - pillow
+  - pdf2image
+  - pytorch=2.1.0
+  - torchvision=0.16.0
+  - torchaudio=2.1.0
+  - pytorch-cuda=12.1
+  - matplotlib

@@ -1,0 +1,37 @@
+data:
+  # 🔹 RAW DATA LOCATION (used by data_loader.py)
+  base_dir: "data/external"
+  dataset: "2pd-mhh-body-raj"
+
+  # 🔹 WHERE PROCESSED TENSORS WILL BE SAVED
+  processed_dir: "data/processed/processed_tensors"
+
+  # 🔹 IMAGE SETTINGS
+  img_size: 1000
+  batch_size: 16
+  train_split: 0.7
+
+  # 🔹 FILTERING
+  exclude_dirs: ["andere", "Kollagenose", "Sjogren Syndrom"]
+
+  # =========================
+  # 🔥 PREPROCESSING FLAGS
+  # =========================
+  to_grayscale: true          # ✅ RGB → grayscale (explicit step)
+  to_rgb_after_grayscale: false   # ✅ decide whether to keep 3 channels
+  use_transforms: true        # ✅ resize
+  use_undersample: true       # ✅ balance dataset
+  show_unique_res: true
+
+  # =========================
+  # 🔥 TRAINING PIPELINE FLAGS
+  # =========================
+  use_weighted_sampler: false # applied after loading tensors
+
+
+training:
+  epochs: 10
+  learning_rate: 0.001
+  use_class_weights: true
+  device: "cuda"
+  model: "FCNNSmall"

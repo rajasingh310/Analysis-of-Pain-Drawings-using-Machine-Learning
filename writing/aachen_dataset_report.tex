@@ -1,0 +1,98 @@
+\documentclass[11pt,a2paper]{article}
+
+% -------------------- Packages --------------------
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{graphicx}
+\usepackage{amsmath, amssymb}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{float}
+
+% -------------------- Remove margins --------------------
+\usepackage[margin=0cm]{geometry} % sets all margins to 0
+
+% -------------------- Title --------------------
+\title{Aachen Dataset Report}
+\author{Raj Singh}
+\date{\today}
+
+% -------------------- Document --------------------
+\begin{document}
+	
+	\maketitle
+	
+	The data have been divided into three main categories:\\
+	
+	
+	1. Others\\
+	
+	2. gHSD\\
+	
+	3. hEDS\\
+	
+	Additionally, I have a xlsx file that provides additional information about the data, such as its labels.\\
+	
+	
+	The total number of ids and its corresponnding labels are 292.\\
+	
+	
+	The total number of images in all three data directories are 245.\\
+	
+	
+	So we have to filter.\\
+	
+	
+	\begin{table}[H]
+		\centering
+		\caption{Coding of Variables (Codierung der Variablen)}
+		\begin{tabular}{c|l|l|l|l|l|l}
+			\toprule
+			\textbf{Code} & \textbf{hEDS} & \textbf{HSD} & \textbf{ADHS (ADHD)} & \textbf{ADS (ADD)} & \textbf{Autism} & \textbf{PTSD} \\
+			\midrule
+			0  & kein hEDS (no hEDS) 
+			& kein HSD (no HSD) 
+			& kein ADHS (no ADHD) 
+			& kein ADS (no ADD) 
+			& kein Autismus (no autism) 
+			& kein PTBS (no PTSD) \\
+			
+			1  & hEDS gesichert (confirmed hEDS) 
+			& HSD gesichert (confirmed HSD) 
+			& Verdacht auf ADHS (suspected ADHD) 
+			& Verdacht auf ADS (suspected ADD) 
+			& Verdacht auf Autismus (suspected autism) 
+			& Verdacht auf PTBS (suspected PTSD) \\
+			
+			2  &  &  
+			& Gesichertes ADHS (confirmed ADHD) 
+			& Gesichertes ADS (confirmed ADD) 
+			& Gesicherter Autismus (confirmed autism) 
+			& Gesicherte PTBS (confirmed PTSD) \\
+			
+			99 & Fehlende Werte (missing values) 
+			& Fehlende Werte (missing values) 
+			& Fehlende Werte (missing values) 
+			& Fehlende Werte (missing values) 
+			& Fehlende Werte (missing values) 
+			& Fehlende Werte (missing values) \\
+			\bottomrule
+		\end{tabular}
+	\end{table}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+\end{document}
