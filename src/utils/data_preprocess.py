@@ -9,8 +9,11 @@ from torch.utils.data import Dataset, DataLoader, random_split, WeightedRandomSa
 from torchvision import transforms
 from collections import Counter
 import matplotlib.pyplot as plt
+import sys
 
-from data_loader import load_raw_dataset
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+
+from src.utils.data_loader import load_raw_dataset
 
 # ==============================
 # 🔹 FAST DATASET (LOAD .pt)

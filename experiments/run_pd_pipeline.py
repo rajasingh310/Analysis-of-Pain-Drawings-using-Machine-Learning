@@ -86,22 +86,22 @@ if __name__ == "__main__":
         model_name = config["model"].get("name", "SimpleCNNSmall")
         if model_name == "SimpleCNNSmall":
             model = SimpleCNNSmall(num_classes=num_classes,
-                                   input_size=input_size,
-                                   input_channels=input_channels)
+                                    input_size=input_size,
+                                    input_channels=input_channels)
         else:
             model = CNN2DNet(num_classes=num_classes,
-                             input_channels=input_channels,
-                             input_size=input_size[0])
+                              input_channels=input_channels,
+                              input_size=input_size[0])
 
     elif model_type == "fcnn":
         model_name = config["model"].get("name", "FCNNSmall")
         if model_name == "FCNNSmall":
             model = FCNNSmall(num_classes=num_classes,
-                              input_size=input_size)
+                               input_size=input_size)
         else:
             model = FCNNNet(input_size=input_size[0],
-                            input_channels=input_channels,
-                            num_classes=num_classes)
+                             input_channels=input_channels,
+                             num_classes=num_classes)
 
     elif model_type == "resnet":
         model = ResNetCustom(num_classes=num_classes,

@@ -12,7 +12,7 @@ data:
   train_split: 0.7
 
   # 🔹 FILTERING
-  exclude_dirs: ["andere", "Kollagenose", "Sjogren Syndrom"]
+  exclude_dirs: ["andere", "Kollagenose", "Sjogren Syndrom", "unknown"]
 
   # =========================
   # 🔥 PREPROCESSING FLAGS
@@ -28,10 +28,15 @@ data:
   # =========================
   use_weighted_sampler: false # applied after loading tensors
 
+  use_processed_tensors: true
+
 
 training:
   epochs: 10
   learning_rate: 0.001
   use_class_weights: true
   device: "cuda"
-  model: "FCNNSmall"
+
+model:
+  type: "cnn"          # "cnn" | "fcnn" | "resnet"
+  name: "SimpleCNNSmall"

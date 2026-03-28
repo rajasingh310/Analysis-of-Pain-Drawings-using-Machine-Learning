@@ -2,18 +2,18 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-class FCNNSmall(nn.Module):
-    def __init__(self, num_classes, input_size=(128, 128)):
-        super(FCNNSmall, self).__init__()
 
-        self.input_dim = 3 * input_size[0] * input_size[1]  # flatten RGB image
+class FCNNSmall(nn.Module):
+    """Simple fully connected network for small datasets"""
+    def __init__(self, num_classes, input_size=(128, 128), input_channels=3):
+        super(FCNNSmall, self).__init__()
+        self.input_dim = input_channels * input_size[0] * input_size[1]
         self.fc1 = nn.Linear(self.input_dim, 128)
         self.dropout = nn.Dropout(0.3)
         self.fc2 = nn.Linear(128, 64)
         self.fc3 = nn.Linear(64, num_classes)
 
     def forward(self, x):
-        # Flatten
         x = x.view(x.size(0), -1)
         x = F.relu(self.fc1(x))
         x = self.dropout(x)
@@ -21,24 +21,13 @@ class FCNNSmall(nn.Module):
         x = self.fc3(x)
         return x
 
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
 
 class FCNNNet(nn.Module):
-    def __init__(self, input_size=128, input_channels=3, num_classes=3):
-        """
-        Fully connected network for 2D images.
-        input_size: width/height of input square image
-        input_channels: 3 for RGB
-        num_classes: number of classes
-        """
+    """Deeper fully connected network"""
+    def __init__(self, num_classes, input_size=128, input_channels=3):
         super(FCNNNet, self).__init__()
-
-        # Flattened input size
         self.flattened_size = input_size * input_size * input_channels
 
-        # Fully connected layers
         self.fc1 = nn.Linear(self.flattened_size, 200)
         self.bn1 = nn.BatchNorm1d(200)
 
@@ -67,9 +56,7 @@ class FCNNNet(nn.Module):
         self.fc9 = nn.Linear(25, num_classes)
 
     def forward(self, x):
-        # Flatten image
         x = x.view(x.size(0), -1)
-
         x = F.relu(self.bn1(self.fc1(x)))
         x = F.relu(self.bn2(self.fc2(x)))
         x = F.relu(self.bn3(self.fc3(x)))
