@@ -34,8 +34,8 @@ class SimpleCNNSmall(nn.Module):
     """Smaller CNN for lightweight experiments"""
     def __init__(self, num_classes, input_size=(128, 128), input_channels=3):
         super(SimpleCNNSmall, self).__init__()
-        self.conv1 = nn.Conv2d(input_channels, 8, 7, padding=1)
-        self.conv2 = nn.Conv2d(8, 16, 7, padding=1)
+        self.conv1 = nn.Conv2d(input_channels, 8, 3, padding=1)
+        self.conv2 = nn.Conv2d(8, 16, 3, padding=1)
         self.pool = nn.MaxPool2d(2, 2)
         self.dropout = nn.Dropout(0.3)
 

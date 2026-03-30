@@ -9,13 +9,13 @@ from pathlib import Path
 import torch
 
 # --------------------------
-# Project path
+# Step 1: Define project root
 # --------------------------
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-sys.path.append(str(PROJECT_ROOT))
+sys.path.append(str(PROJECT_ROOT))  # Ensure src modules are importable
 
 # --------------------------
-# Imports from src
+# Step 2: Imports from src
 # --------------------------
 from src.utils.data_preprocess import process_dataset
 from src.utils.load_processed_dataset import get_dataloaders
@@ -28,21 +28,23 @@ from src.models.fcnn_models import FCNNSmall, FCNNNet
 from src.train_and_eval.train import train_model
 from src.train_and_eval.evaluate import evaluate_model  # your evaluate.py script
 
-
 # ===========================
-# Helper: pick device
+# Step 3: Helper function to pick device
 # ===========================
 def get_device():
+    """
+    Returns torch.device('cuda') if GPU is available, else CPU.
+    """
     return torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 # ===========================
-# Main pipeline
+# Step 4: Main pipeline
 # ===========================
 if __name__ == "__main__":
 
     # --------------------------
-    # Load config
+    # Step 4.1: Load configuration file
     # --------------------------
     config_path = PROJECT_ROOT / "experiments/configs/aachen.yaml"
     print("Config path:", config_path)
@@ -50,7 +52,7 @@ if __name__ == "__main__":
         config = yaml.safe_load(f)
 
     # --------------------------
-    # Use preprocessed tensors?
+    # Step 4.2: Check if preprocessed tensors should be used
     # --------------------------
     use_processed_tensors = config["data"].get("use_processed_tensors", False)
 
@@ -61,7 +63,7 @@ if __name__ == "__main__":
         process_dataset(config)
 
     # --------------------------
-    # Load dataset
+    # Step 4.3: Load dataset
     # --------------------------
     print("\n📦 Loading dataset for training...")
     train_loader, val_loader, num_classes = get_dataloaders(config)
@@ -69,7 +71,7 @@ if __name__ == "__main__":
     print(f"Number of classes: {num_classes}")
 
     # --------------------------
-    # Detect input channels dynamically
+    # Step 4.4: Detect input channels dynamically
     # --------------------------
     x_sample, _ = next(iter(train_loader))
     input_channels = x_sample.shape[1]  # 1 for grayscale, 3 for RGB
@@ -77,7 +79,7 @@ if __name__ == "__main__":
     print(f"Detected input channels: {input_channels}, input size: {input_size}")
 
     # --------------------------
-    # Initialize model
+    # Step 4.5: Initialize model
     # --------------------------
     model_type = config["model"].get("type", "cnn")  # cnn / fcnn / resnet
     print(f"\n⚙️ Using model type: {model_type}")
@@ -110,7 +112,7 @@ if __name__ == "__main__":
         raise ValueError(f"Unknown model type: {model_type}")
 
     # --------------------------
-    # Move model to device
+    # Step 4.6: Move model to device
     # --------------------------
     device = get_device()
     model = model.to(device)
@@ -118,7 +120,7 @@ if __name__ == "__main__":
     print(model)
 
     # --------------------------
-    # Forward pass sanity check
+    # Step 4.7: Forward pass sanity check
     # --------------------------
     with torch.no_grad():
         x_sample = x_sample.to(device)
@@ -126,19 +128,21 @@ if __name__ == "__main__":
         print(f"\n✅ Forward pass successful, output shape: {out.shape}")
 
     # --------------------------
-    # Training
+    # Step 4.8: Training
     # --------------------------
     print("\n🏋️ Starting training...")
     trained_model = train_model(model, train_loader, val_loader, config, device)
 
-    # Save trained model
+    # --------------------------
+    # Step 4.9: Save trained model
+    # --------------------------
     model_save_path = PROJECT_ROOT / "experiments" / "saved_models" / f"{model_type}_{model_name}.pt"
     model_save_path.parent.mkdir(parents=True, exist_ok=True)
     torch.save(trained_model.state_dict(), model_save_path)
     print(f"✅ Model saved at: {model_save_path}")
 
     # --------------------------
-    # Evaluation
+    # Step 4.10: Evaluation
     # --------------------------
     print("\n🔍 Evaluating model on validation set...")
-    evaluate_model(trained_model, val_loader, device, num_classes)
+    evaluate_model(trained_model, val_loader, device)

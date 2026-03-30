@@ -7,12 +7,12 @@ data:
   processed_dir: "data/processed/processed_tensors"
 
   # 🔹 IMAGE SETTINGS
-  img_size: 1000
+  img_size: 1500
   batch_size: 16
-  train_split: 0.7
+  train_split: 0.75
 
   # 🔹 FILTERING
-  exclude_dirs: ["andere", "Kollagenose", "Sjogren Syndrom", "unknown"]
+  exclude_dirs: ["andere", "Arthritis", "Kollagenose", "Polymyalgia", "Sjogren Syndrom", "unknown"]
 
   # =========================
   # 🔥 PREPROCESSING FLAGS
@@ -28,15 +28,15 @@ data:
   # =========================
   use_weighted_sampler: false # applied after loading tensors
 
-  use_processed_tensors: true
+  use_processed_tensors: false
 
 
 training:
-  epochs: 10
+  epochs: 50
   learning_rate: 0.001
   use_class_weights: true
   device: "cuda"
 
 model:
-  type: "cnn"          # "cnn" | "fcnn" | "resnet"
-  name: "SimpleCNNSmall"
+  type: "fcnn"          # "cnn" | "fcnn" | "resnet"
+  name: "FCNNNet"
