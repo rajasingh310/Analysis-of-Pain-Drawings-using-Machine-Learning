@@ -19,3 +19,6 @@ mhh/
 munich/
 thm/
 nuf.py
+
+!writing/**
+!results/**
