@@ -1,7 +1,8 @@
 data:
   # 🔹 RAW DATA LOCATION (used by data_loader.py)
-  base_dir: "data/external"
-  dataset: "2pd-mhh-body-raj"
+  base_dir: "data/processed"
+  dataset: "mhh/schmerzzeichnungen/seepain data latest version/classes/"
+  dataset_name: "mhh_seepain"
 
   # 🔹 WHERE PROCESSED TENSORS WILL BE SAVED
   processed_dir: "data/processed/processed_tensors"
@@ -12,7 +13,8 @@ data:
   train_split: 0.75
 
   # 🔹 FILTERING
-  exclude_dirs: ["andere", "Arthritis", "Kollagenose", "Polymyalgia", "Sjogren Syndrom", "unknown"]
+  #exclude_dirs: ["andere", "Arthritis", "Kollagenose", "Polymyalgia", "Sjogren Syndrom", "unknown"]
+  exclude_dirs: ["Kollagenose", "Sjogren Syndrom", "unknown", 'IBM', 'SMA', 'Myositis', 'Polymyalgiarheumatica', 'Riesenzellarteriitis', 'Sonstige', 'axiale Spondyloarthritis', 'nan']
 
   # =========================
   # 🔥 PREPROCESSING FLAGS
@@ -21,14 +23,14 @@ data:
   to_rgb_after_grayscale: false   # ✅ decide whether to keep 3 channels
   use_transforms: true        # ✅ resize
   use_undersample: true       # ✅ balance dataset
-  show_unique_res: true
+  show_unique_res: false
 
   # =========================
   # 🔥 TRAINING PIPELINE FLAGS
   # =========================
   use_weighted_sampler: false # applied after loading tensors
 
-  use_processed_tensors: false
+  use_processed_tensors: true
 
 
 training:
@@ -38,5 +40,5 @@ training:
   device: "cuda"
 
 model:
-  type: "fcnn"          # "cnn" | "fcnn" | "resnet"
-  name: "FCNNNet"
+  type: "fcnn"
+  name: "FCNNSmall"

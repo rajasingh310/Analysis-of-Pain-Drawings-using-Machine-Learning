@@ -5,8 +5,9 @@ import torch.nn.functional as F
 
 class FCNNSmall(nn.Module):
     """Simple fully connected network for small datasets"""
-    def __init__(self, num_classes, input_size=(128, 128), input_channels=3):
+    def __init__(self, num_classes, input_size=(128,128), input_channels=3):
         super(FCNNSmall, self).__init__()
+        # Use actual input size
         self.input_dim = input_channels * input_size[0] * input_size[1]
         self.fc1 = nn.Linear(self.input_dim, 128)
         self.dropout = nn.Dropout(0.3)

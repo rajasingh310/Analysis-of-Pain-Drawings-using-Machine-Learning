@@ -4,14 +4,13 @@ import torch.nn.functional as F
 
 
 class SimpleCNN(nn.Module):
-    """Basic 2-layer CNN"""
-    def __init__(self, num_classes, input_size=(128, 128), input_channels=3):
+    def __init__(self, num_classes, input_size=(128,128), input_channels=1):
         super(SimpleCNN, self).__init__()
         self.conv1 = nn.Conv2d(input_channels, 16, 3, padding=1)
         self.conv2 = nn.Conv2d(16, 32, 3, padding=1)
-        self.pool = nn.MaxPool2d(2, 2)
+        self.pool = nn.MaxPool2d(2,2)
 
-        # Compute fc1 input size dynamically
+        # 🔥 Compute flattened size dynamically
         with torch.no_grad():
             dummy = torch.zeros(1, input_channels, *input_size)
             x = self.pool(F.relu(self.conv1(dummy)))
