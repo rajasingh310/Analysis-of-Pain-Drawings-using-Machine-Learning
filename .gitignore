@@ -18,7 +18,17 @@
 mhh/
 munich/
 thm/
+nuf/
 nuf.py
 
 !writing/**
 !results/**
+
+# LaTeX build artifacts
+*.aux
+*.log
+*.out
+*.synctex.gz
+*.toc
+*.fls
+*.fdb_latexmk

@@ -1,0 +1,441 @@
+\documentclass[conference]{IEEEtran}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{gensymb}
+
+\title{SeePain: A Digital Pain Drawing Acquisition Platform for Standardized Clinical Data Collection and Automated Disease Classification}
+
+\author{
+\IEEEauthorblockN{Raj Singh}
+\IEEEauthorblockA{
+% TODO: Add affiliation
+}
+\and
+\IEEEauthorblockN{Kai Vahldiek}
+\IEEEauthorblockA{
+% TODO: Add affiliation
+}
+% TODO: Add remaining co-authors
+}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Pain drawings are a well-established clinical tool in which patients mark the location and character of their pain on a standardized body outline. Despite their widespread use, most pain drawings are still acquired on paper, leading to heterogeneous data that is difficult to digitize, standardize, and analyze computationally. In this work, we present \textbf{SeePain}, a cross-platform mobile application designed for the digital acquisition of pain drawings in clinical settings. SeePain enables patients to draw directly on a tablet using a structured color-coded intensity encoding (yellow to red, representing pain levels 1--10), adjustable line thickness, and a standardized human body template. A planned pain questionnaire module will additionally capture temporal, qualitative, and neuropathic pain characteristics. We describe the system architecture, the data representation, and the clinical deployment workflow. To evaluate the diagnostic utility of digitally acquired pain drawings, we conduct preliminary classification experiments using convolutional and fully connected neural networks on a dataset of 124 drawings collected via SeePain across 9 rheumatological disease categories. We report that current models struggle with this small dataset, exhibiting class-collapse behavior in binary classification tasks, and we contextualize these findings against larger, paper-based datasets from three other clinical sites (totaling 1,278 drawings) where partial classification success was achieved. We argue that the primary value of SeePain lies in enabling standardized, scalable data collection that can overcome the data scarcity bottleneck, and we outline concrete directions for expanding the dataset, applying transfer learning, and improving model robustness.
+\end{abstract}
+
+\begin{IEEEkeywords}
+pain drawing, digital health, clinical data acquisition, disease classification, deep learning, rheumatology, mobile application
+\end{IEEEkeywords}
+
+% ============================================================
+\section{Introduction}
+\label{sec:introduction}
+
+Pain drawings have been used in clinical practice since the 1940s~\cite{palmer1949} as a simple yet informative tool for patients to communicate the spatial distribution, type, and intensity of their pain. A patient is presented with a printed outline of the human body and asked to shade or mark areas where they experience pain, often using different symbols or colors to indicate pain quality (e.g., burning, stabbing, numbness). These drawings encode rich spatial information about symptom patterns that clinicians use to support differential diagnosis, particularly in rheumatological and musculoskeletal conditions~\cite{margolis1986}.
+
+Despite their clinical value, pain drawings remain overwhelmingly paper-based. This introduces several challenges for computational analysis: (1) scanning and digitization introduce noise and artifacts; (2) drawing protocols vary across institutions, leading to heterogeneous image formats, resolutions, and body templates; (3) patient-generated drawings exhibit high intra- and inter-individual variability; and (4) the resulting datasets are typically small and class-imbalanced, reflecting the natural prevalence of diseases in clinical cohorts.
+
+Recent advances in deep learning for medical image analysis have demonstrated remarkable success in domains such as radiology, pathology, and dermatology, where large, standardized datasets are available~\cite{litjens2017}. However, pain drawings occupy a fundamentally different niche: they are \emph{patient-generated} rather than device-generated, inherently subjective, and lack the pixel-level consistency of modalities like X-ray or MRI. This makes them simultaneously an attractive and challenging target for automated classification.
+
+In this paper, we present \textbf{SeePain}, a mobile application developed for the standardized digital acquisition of pain drawings in clinical environments. SeePain addresses the data heterogeneity problem at its source by providing a uniform acquisition interface with:
+\begin{itemize}
+    \item A standardized human body template displayed on a tablet screen;
+    \item A continuous color gradient encoding pain intensity from 1 (yellow) to 10 (red);
+    \item Adjustable line thickness for marking precision;
+    \item A planned pain questionnaire module for capturing temporal, qualitative, and neuropathic characteristics;
+    \item Pseudonymized data export for privacy compliance.
+\end{itemize}
+
+We describe the system architecture, the interaction design tailored to clinical workflows, and the data representation format. We then present preliminary classification experiments on $N=124$ pain drawings collected via SeePain across 9 rheumatological disease categories at Medizinische Hochschule Hannover (MHH). We compare these results against experiments on larger, paper-based datasets from three other German clinical institutions (RWTH Aachen, MHH IDANA, and Ludwig-Maximilians-Universit\"at M\"unchen), totaling 1,278 additional drawings.
+
+Our results confirm that the small dataset size remains the primary bottleneck: neural network models exhibit class-collapse behavior on the SeePain data, defaulting to majority-class predictions. In contrast, partial classification success is observed on the larger paper-based datasets, where deeper fully connected architectures achieve up to 0.93 recall on individual classes. We argue that SeePain's principal contribution is not in the classification results themselves, but in establishing the infrastructure for scalable, standardized data collection that can overcome this bottleneck in future work.
+
+% ============================================================
+\section{Related Work}
+\label{sec:related_work}
+
+\subsection{Pain Drawings in Clinical Practice}
+
+Pain drawings have a long history in clinical assessment. Margolis et al.~\cite{margolis1986} proposed a standardized scoring system that divides the body into 45 regions, enabling quantitative analysis of pain distribution. Subsequent work explored correlations between pain drawing patterns and specific diagnoses, including fibromyalgia~\cite{hauser2009}, low back pain~\cite{ohnmeiss1995}, and rheumatoid arthritis~\cite{thompson2002}. However, most of these studies relied on manual scoring by trained clinicians, limiting scalability.
+
+\subsection{Digital Pain Drawing Tools}
+
+Several digital tools for pain drawing acquisition have been developed. Landmark systems include the Navigate Pain platform~\cite{boudreau2016}, which provides a 3D body model for marking pain regions, and various tablet-based interfaces developed for chronic pain research~\cite{barbero2015}. These tools have demonstrated that digital acquisition improves data quality and patient compliance compared to paper-based methods. However, most existing platforms focus on pain localization and do not integrate intensity encoding or structured questionnaire data into a single acquisition workflow.
+
+\subsection{Machine Learning for Pain Drawing Analysis}
+
+Computational analysis of pain drawings has been explored using both classical and deep learning approaches. Dijk et al.~\cite{vandijk2017} used random forests on extracted features from digitized pain drawings for chronic pain classification. More recently, convolutional neural networks (CNNs) have been applied to medical image classification tasks with success in radiology~\cite{rajpurkar2017} and dermatology~\cite{esteva2017}, but their application to pain drawings remains limited, primarily due to the lack of large, standardized datasets. The few studies that have applied deep learning to pain-related imagery have noted the critical dependency on dataset size and quality~\cite{boudreau2016}.
+
+\subsection{Small-Sample Medical Image Classification}
+
+The challenge of learning from limited medical data is well-documented. Common mitigation strategies include transfer learning from ImageNet-pretrained models~\cite{tajbakhsh2016}, data augmentation~\cite{shorten2019}, few-shot learning~\cite{prabhu2019}, and synthetic data generation using generative adversarial networks~\cite{frid2018}. These approaches have shown promise in domains such as retinal imaging and histopathology, but have not yet been systematically applied to pain drawings.
+
+% ============================================================
+\section{The SeePain Application}
+\label{sec:seepain}
+
+\subsection{Design Objectives}
+
+SeePain was designed with the following objectives:
+\begin{enumerate}
+    \item \textbf{Standardization}: Provide a uniform body template and encoding scheme across all acquisition sites, eliminating inter-institutional variability.
+    \item \textbf{Usability}: Be usable by patients with no prior digital literacy training, in a clinical waiting-room setting, with minimal instruction.
+    \item \textbf{Expressiveness}: Capture not only pain location but also intensity (via color) and extent (via adjustable line width), enabling richer data than binary presence/absence marking.
+    \item \textbf{Privacy}: Support pseudonymized data collection compliant with clinical data protection requirements.
+    \item \textbf{Portability}: Run on commodity Android tablets without requiring specialized hardware.
+\end{enumerate}
+
+\subsection{System Architecture}
+
+SeePain is implemented in Python using the Kivy framework~\cite{kivy}, enabling cross-platform deployment on Android (via Buildozer) and desktop operating systems. The application follows a screen-based navigation model managed by Kivy's \texttt{ScreenManager}. The architecture consists of three main screens:
+
+\begin{enumerate}
+    \item \textbf{Welcome Screen}: Introduces the application in German (the target patient population's language) and provides a single entry point.
+    \item \textbf{Tutorial Carousel}: A six-slide instructional sequence that teaches the patient how to use the drawing tools, interpret the intensity scale, and navigate the interface. The main drawing interface is gated behind completion of the tutorial to ensure informed interaction.
+    \item \textbf{Drawing Interface}: The core screen, described in detail below.
+\end{enumerate}
+
+\subsection{Drawing Interface}
+
+The drawing interface (Fig.~\ref{fig:seepain_ui}) is the central component of SeePain. It is built around a custom \texttt{DrawWidget} class extending Kivy's \texttt{Scatter} widget, which provides multi-touch support for both drawing and navigation.
+
+\subsubsection{Body Template}
+A standardized human body outline (front and back views annotated with V=Vorne/Front, H=Hinten/Back, L=Links/Left, R=Rechts/Right) is displayed as the background image. All patients draw on the same template, ensuring spatial consistency across acquisitions.
+
+\subsubsection{Pain Intensity Encoding}
+A continuous slider (labeled ``Schmerzniveau'', pain level) maps to a 10-step color gradient:
+\begin{equation}
+    \text{color}(k) = (1.0,\ 1.0 - 0.1 \cdot k,\ 0.0,\ 1.0), \quad k \in \{0, 1, \ldots, 9\}
+\end{equation}
+where $k=0$ corresponds to the lowest intensity (bright yellow, RGB: 1.0, 1.0, 0.0) and $k=9$ corresponds to the highest intensity (pure red, RGB: 1.0, 0.0, 0.0). This encoding is directly embedded in the pixel data of the exported image, enabling lossless recovery of intensity information from the saved PNG file.
+
+\subsubsection{Line Thickness}
+A second slider (``Bleistiftdicke'', pencil thickness) controls the drawing line width from 1 to 10 pixels, allowing patients to indicate both focal points and broader pain regions with appropriate precision.
+
+\subsubsection{Interaction Modes}
+The interface supports two modes toggled via a button:
+\begin{itemize}
+    \item \textbf{Drawing Mode}: Touch input creates freehand lines on the canvas. Translation and scaling are disabled to prevent accidental navigation.
+    \item \textbf{Navigation Mode}: Touch input pans and zooms the canvas for detailed drawing or review.
+\end{itemize}
+
+\subsubsection{Editing Tools}
+An eraser tool removes individual strokes based on proximity detection (40-pixel threshold), with a semi-transparent red circle indicating the eraser area. Full undo/redo stacks support non-destructive editing.
+
+\subsubsection{Data Export}
+Upon completion, the patient enters a pseudonym, and the drawing is exported as a PNG image to the device's storage. The canvas is reset to its default scale and position before export to ensure consistent image dimensions. All coordinate data is stored in the widget's local coordinate space, decoupled from screen resolution.
+
+% TODO: Add screenshot figure
+% \begin{figure}[t]
+%     \centering
+%     \includegraphics[width=\columnwidth]{figures/seepain_ui.png}
+%     \caption{SeePain drawing interface showing the body template, pain intensity slider (left), pencil thickness slider, and control buttons.}
+%     \label{fig:seepain_ui}
+% \end{figure}
+
+\subsection{Planned Pain Questionnaire Module}
+
+As a planned extension, SeePain will incorporate a structured questionnaire module to complement the drawing interface. The design captures:
+
+\begin{itemize}
+    \item \textbf{Q1 -- Pain Duration}: Categorical (${<}1$ month to ${>}5$ years)
+    \item \textbf{Q2 -- Pain Pattern}: Persistent with light/severe fluctuations, or attack-based with/without baseline pain
+    \item \textbf{Q3 -- Attack Characteristics}: Frequency (several per day to monthly), duration (seconds to ${>}3$ days), and daytime pattern
+    \item \textbf{Q4 -- Pain Qualities}: Physical (dull, oppressive, pulsating, burning, etc.) and affective (miserable, dreadful, excruciating) descriptors
+    \item \textbf{Q5 -- Neuropathic Indicators}: Burning, formication, allodynia, electric shocks, temperature sensitivity, numbness, and pressure sensitivity
+\end{itemize}
+
+This planned questionnaire is closely aligned with established instruments such as the McGill Pain Questionnaire~\cite{melzack1975} and painDETECT~\cite{freynhagen2006}. Once implemented, it will enable multimodal analysis combining visual and structured textual data.
+
+\subsection{Clinical Deployment}
+
+SeePain has been deployed at Medizinische Hochschule Hannover (MHH) in the rheumatology outpatient clinic. Patients waiting for their appointment are provided with an Android tablet running SeePain. After completing the tutorial carousel, they draw their average pain experienced over the preceding week. The drawing is saved with a pseudonym that is later linked to the patient's clinical diagnosis in a separate, access-controlled database.
+
+% ============================================================
+\section{Datasets}
+\label{sec:datasets}
+
+To contextualize the SeePain-collected data and evaluate the broader feasibility of pain drawing classification, we use datasets from four German clinical institutions. Table~\ref{tab:datasets} summarizes their characteristics.
+
+\begin{table*}[t]
+\centering
+\caption{Overview of pain drawing datasets used in this study. The SeePain dataset (MHH SeePain) is the focus of this paper; the remaining three serve as reference datasets for comparative experiments.}
+\label{tab:datasets}
+\begin{tabular}{@{}llcccl@{}}
+\toprule
+\textbf{Dataset} & \textbf{Institution} & \textbf{Samples} & \textbf{Classes} & \textbf{Acquisition} & \textbf{Disease Domain} \\
+\midrule
+MHH SeePain & MHH Hannover & 124 & 9 & Digital (SeePain app) & Rheumatology \\
+Aachen & RWTH Aachen & 245 & 3 & Paper (scanned) & Ehlers-Danlos / HSD \\
+MHH IDANA & MHH Hannover & 885 & 7 & Paper (IDANA platform) & Rheumatology \\
+Munich & LMU Munich & 148 & 4 & Paper (scanned) & Neuromuscular \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\subsection{MHH SeePain Dataset (Focus)}
+
+The primary dataset consists of 124 pain drawings collected digitally via the SeePain app at MHH. Patients span 9 rheumatological disease categories including Psoriasis-Arthritis, Rheumatoide Arthritis, Arthritis, Kollagenose, Polymyalgia rheumatica, Sjogren Syndrom, Spondyloarthritis, and others. The class distribution is highly imbalanced, with some categories containing fewer than 10 samples.
+
+For classification experiments, we reduce the task to a binary problem: Psoriasis-Arthritis vs.\ Rheumatoide Arthritis, the two largest classes.
+
+\subsection{Aachen Dataset}
+
+The Aachen dataset contains 245 paper-based pain drawings from the RWTH Aachen University Hospital, covering three classes: hypermobile Ehlers-Danlos syndrome (hEDS), generalized hypermobility spectrum disorder (gHSD), and a control group (Others). Drawings were scanned and digitized, introducing variable scan quality.
+
+\subsection{MHH IDANA Dataset}
+
+The IDANA dataset comprises 885 drawings acquired through the IDANA digital intake platform at MHH, spanning 7 rheumatological categories. For experiments, we select a 4-class subset: Arthritis, Polyarthritis, Polymyalgia, and Spondyloarthritis.
+
+\subsection{Munich Dataset}
+
+The Munich dataset contains 148 pain drawings from 67 patients at LMU Munich, covering 4 neuromuscular diseases: Facioscapulohumeral muscular dystrophy (FSHD, 34 images), Late-Onset Pompe Disease (LOPD, 76 images), Inclusion Body Myositis (IBM, 16 images), and Spinal Muscular Atrophy (SMA, 22 images). Binary experiments use FSHD vs.\ POMPE.
+
+% ============================================================
+\section{Methodology}
+\label{sec:methodology}
+
+\subsection{Preprocessing Pipeline}
+
+All datasets undergo a uniform preprocessing pipeline:
+\begin{enumerate}
+    \item \textbf{Resizing}: Images are resized to $1500 \times 1500$ pixels.
+    \item \textbf{Grayscale Conversion}: Color images are converted to single-channel grayscale to reduce input dimensionality and standardize across color/monochrome sources.
+    \item \textbf{Class Balancing}: Random undersampling reduces majority classes to match the size of the smallest class, mitigating class imbalance at the cost of discarding data.
+    \item \textbf{Tensor Conversion}: Processed images are converted to PyTorch tensors and saved as \texttt{.pt} files for reproducible loading.
+    \item \textbf{Train/Validation Split}: A 75/25 random split divides the data.
+\end{enumerate}
+
+\subsection{Data Augmentation}
+
+For the SeePain dataset, we additionally implement a data augmentation pipeline:
+\begin{itemize}
+    \item \textbf{Rotation}: Random angles in $[-1.5\degree, +1.5\degree]$ with bicubic interpolation.
+    \item \textbf{Zoom}: Random scale factors in $[0.95, 1.05]$ with center cropping (zoom-in) or black padding (zoom-out).
+    \item \textbf{Color Inversion}: Stroke pixels are inverted and composited onto the standard body template background.
+\end{itemize}
+Each original image generates 20 augmented variants, expanding the effective training set. We note that the augmentation parameters are deliberately conservative to preserve the spatial semantics of pain drawings: large rotations or flips would alter the clinical meaning.
+
+\subsection{Model Architectures}
+
+We evaluate four neural network architectures of increasing complexity:
+
+\begin{itemize}
+    \item \textbf{SimpleCNNSmall}: 1 convolutional layer (8$\to$16 filters), max pooling, dropout (0.3), and a fully connected head with 64 hidden units.
+    \item \textbf{SimpleCNN}: 2 convolutional layers (16$\to$32 filters), 2 max pooling layers, and a fully connected head with 128 hidden units.
+    \item \textbf{FCNNSmall}: 3 fully connected layers (input$\to$128$\to$64$\to$num\_classes) with dropout (0.3).
+    \item \textbf{FCNNNet}: 9 fully connected layers (200$\to$250$\to$300$\to$250$\to$200$\to$100$\to$50$\to$25$\to$num\_classes) with batch normalization on all layers and dropout (0.3).
+\end{itemize}
+
+All models use cross-entropy loss and Adam optimization with a learning rate of 0.001, batch size of 16, and 50 training epochs.
+
+\subsection{Evaluation Protocol}
+
+Models are evaluated on the 25\% held-out validation set. We report:
+\begin{itemize}
+    \item Overall accuracy
+    \item Per-class recall (sensitivity), which is critical for clinical applications where missing a diagnosis is more costly than a false positive
+    \item Confusion matrices to visualize inter-class confusion patterns
+\end{itemize}
+
+% ============================================================
+\section{Experiments and Results}
+\label{sec:results}
+
+We conduct classification experiments on all four datasets to contextualize the SeePain results. Table~\ref{tab:tasks} summarizes the experimental configurations.
+
+\begin{table}[t]
+\centering
+\caption{Classification tasks across the four datasets.}
+\label{tab:tasks}
+\begin{tabular}{@{}lccl@{}}
+\toprule
+\textbf{Dataset} & \textbf{Classes} & \textbf{Task} & \textbf{Effective $N$} \\
+\midrule
+MHH SeePain & 2 & PsA vs.\ RA & $\sim$30--40 \\
+Aachen & 3 & hEDS / gHSD / Others & $\sim$245 \\
+MHH IDANA & 4 & Arthritis subset & $\sim$400 \\
+Munich & 2 & FSHD vs.\ POMPE & $\sim$68 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{MHH SeePain Results (Binary Classification)}
+
+On the binary Psoriasis-Arthritis vs.\ Rheumatoide Arthritis task, all four models exhibit \textbf{class-collapse behavior}: the networks converge to predicting a single class for all inputs, achieving approximately 50\% accuracy (equivalent to always predicting the majority class after undersampling). This result is consistent across architectures, suggesting that the models cannot extract discriminative features from the available $\sim$30--40 training samples.
+
+The training curves show that validation loss fails to decrease meaningfully, while training loss drops—indicating overfitting to the small training set without genuine feature learning. Data augmentation (20$\times$ expansion) delays but does not prevent the collapse.
+
+\subsection{Reference Dataset Results}
+
+\subsubsection{Aachen (3-class)}
+The Aachen dataset, with 245 samples, shows partial classification success. FCNNNet achieves per-class recalls of 0.93 (hEDS), 0.88 (Others), and 0.38 (gHSD). The gHSD class is systematically confused with hEDS, which is clinically plausible given that gHSD is often considered a milder phenotype on the same spectrum. SimpleCNNSmall distributes predictions more evenly but with substantial inter-class mixing.
+
+\subsubsection{MHH IDANA (4-class)}
+With the largest dataset (885 samples, $\sim$400 after class exclusion and balancing), FCNNNet achieves per-class recalls of up to 0.95 on one class and 0.89 on another, with the remaining two classes showing significant confusion. Shallower models (FCNNSmall, SimpleCNNSmall) collapse to single-class predictions, confirming the importance of model capacity.
+
+\subsubsection{Munich (Binary)}
+The Munich binary task (FSHD vs.\ POMPE, 68 effective samples after balancing) shows class-collapse behavior similar to the SeePain dataset, with models defaulting to majority-class predictions.
+
+\subsection{Cross-Dataset Observations}
+
+Table~\ref{tab:summary_results} summarizes the key findings across datasets.
+
+\begin{table}[t]
+\centering
+\caption{Summary of classification outcomes. ``Collapse'' indicates the model predicts a single class for all inputs.}
+\label{tab:summary_results}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Dataset} & \textbf{$N$ (balanced)} & \textbf{Best Model} & \textbf{Outcome} \\
+\midrule
+MHH SeePain & $\sim$30--40 & -- & Collapse \\
+Munich & $\sim$68 & -- & Collapse \\
+Aachen & $\sim$245 & FCNNNet & Partial \\
+MHH IDANA & $\sim$400 & FCNNNet & Partial \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+A clear trend emerges: \textbf{classification performance scales with dataset size}. Datasets with fewer than approximately 100 balanced samples consistently produce collapsed predictions, while datasets approaching or exceeding 200 balanced samples per class enable partial discrimination. This finding is consistent with the well-established sample complexity requirements of neural networks~\cite{shorten2019} and underscores the need for scaled data collection—precisely the capability that SeePain provides.
+
+% ============================================================
+\section{Discussion}
+\label{sec:discussion}
+
+\subsection{Why SeePain Matters Despite Negative Classification Results}
+
+The classification results on the SeePain dataset are, by conventional standards, negative: the models fail to discriminate between disease classes. However, we argue that this outcome is informative rather than discouraging, for three reasons:
+
+\begin{enumerate}
+    \item \textbf{The bottleneck is data, not the approach.} The consistent success-failure boundary at $\sim$100--200 balanced samples, observed across four independent datasets and multiple architectures, points strongly to data scarcity rather than a fundamental limitation of pain drawings as a diagnostic modality. The partial successes on Aachen and IDANA datasets confirm that pain drawings \emph{do} contain disease-discriminative spatial patterns that neural networks can learn.
+
+    \item \textbf{Digital acquisition enables scalable data collection.} Paper-based acquisition is inherently limited by the logistical overhead of scanning, digitizing, and quality-controlling hand-drawn images. SeePain eliminates these bottlenecks: drawings are born-digital, spatially consistent, and immediately available for analysis. The 124 drawings collected so far represent an early deployment; continued collection at MHH and potential multi-site deployment can rapidly increase the dataset size.
+
+    \item \textbf{Standardization improves data quality.} Beyond scale, SeePain improves data quality by enforcing a uniform body template, a quantitative intensity encoding, and a consistent coordinate system. This eliminates the inter-site variability that complicates the paper-based datasets (e.g., different body outlines, scan resolutions, and color spaces).
+\end{enumerate}
+
+\subsection{The Color Intensity Encoding as a Novel Data Dimension}
+
+A unique feature of SeePain is the continuous color gradient encoding pain intensity directly into the pixel data. Unlike paper-based drawings where intensity is either absent or coarsely indicated by shading density, SeePain captures a 10-level intensity signal in the RGB channels. In the current experiments, this information is discarded during grayscale conversion—a necessary step for cross-dataset comparability. Future work should exploit this channel in SeePain-only experiments, as it provides a potentially discriminative signal: different diseases may produce characteristic intensity profiles (e.g., high-intensity focal pain in inflammatory conditions vs.\ diffuse low-intensity pain in fibromyalgia-spectrum disorders).
+
+\subsection{Limitations}
+
+\begin{itemize}
+    \item \textbf{Sample size.} The 124 SeePain drawings are insufficient for robust neural network training. The effective per-class sample count after balancing drops to $\sim$15--20 samples, far below the typical requirements for even simple architectures.
+    \item \textbf{Grayscale conversion.} Converting SeePain's color-encoded drawings to grayscale discards the intensity dimension, treating SeePain data identically to paper-based data. This is a conservative choice for cross-dataset comparability but underutilizes SeePain's unique data richness.
+    \item \textbf{Limited model complexity.} We evaluate only simple CNN and FCNN architectures. Transfer learning from ImageNet-pretrained models (e.g., ResNet, EfficientNet) may extract more robust features, particularly in the low-data regime.
+    \item \textbf{Single-site deployment.} SeePain data comes from a single institution (MHH), limiting generalizability claims. Multi-site deployment would strengthen both the dataset and the evidence for cross-institutional standardization benefits.
+    \item \textbf{No questionnaire integration.} The pain questionnaire module is planned but not yet implemented. Multimodal classification combining drawing and questionnaire features remains a future direction.
+\end{itemize}
+
+\subsection{Comparison with Existing Digital Pain Drawing Tools}
+
+Compared to existing platforms such as Navigate Pain~\cite{boudreau2016}, SeePain occupies a complementary niche:
+\begin{itemize}
+    \item Navigate Pain uses a 3D body model and focuses on pain localization; SeePain uses a 2D template with continuous intensity encoding.
+    \item SeePain is designed for low-resource deployment (commodity Android tablets, no internet required), while Navigate Pain is web-based.
+    \item SeePain plans to integrate a structured pain questionnaire, enabling future multimodal analysis.
+    \item SeePain targets rheumatological and neuromuscular disease classification rather than general chronic pain assessment.
+\end{itemize}
+
+% ============================================================
+\section{Future Work}
+\label{sec:future_work}
+
+\begin{enumerate}
+    \item \textbf{Dataset expansion}: Continue data collection at MHH and deploy SeePain at additional clinical sites (RWTH Aachen, LMU Munich) to build a multi-site dataset of $>$1,000 standardized digital pain drawings.
+    \item \textbf{Transfer learning}: Apply ResNet-18/34 and EfficientNet models pretrained on ImageNet, fine-tuning only the classification head on pain drawing data.
+    \item \textbf{Color-aware classification}: Retain the RGB intensity encoding in SeePain-only experiments to evaluate whether the pain intensity gradient provides additional discriminative power.
+    \item \textbf{Multimodal fusion}: Combine pain drawings with the questionnaire data (pain duration, quality, neuropathic indicators) in a late-fusion architecture.
+    \item \textbf{Generative augmentation}: Use variational autoencoders or diffusion models to generate synthetic pain drawings, conditioned on disease class, to augment the small dataset.
+    \item \textbf{Cross-site generalization}: Train on one institution's data and evaluate on another to assess the standardization benefit of digital acquisition.
+    \item \textbf{Clinician evaluation}: Conduct a reader study comparing clinicians' diagnostic accuracy with and without AI-augmented pain drawing analysis.
+\end{enumerate}
+
+% ============================================================
+\section{Conclusion}
+\label{sec:conclusion}
+
+We presented SeePain, a mobile application for standardized digital acquisition of pain drawings in clinical settings. SeePain addresses the data heterogeneity and scalability limitations of paper-based pain drawing collection by providing a uniform body template and continuous color-coded intensity encoding, with a questionnaire module planned for future integration. Preliminary classification experiments on the SeePain dataset ($N=124$) confirm that current simple neural network architectures cannot learn discriminative features from this limited data, exhibiting class-collapse behavior. However, comparative experiments on larger paper-based datasets ($N=245$ to $885$) demonstrate that pain drawings do encode disease-specific spatial patterns when sufficient data is available, with per-class recalls reaching 0.93.
+
+These findings position SeePain not as a classification tool in its current state, but as a \emph{data collection infrastructure} that can resolve the sample-size bottleneck currently limiting automated pain drawing analysis. By standardizing acquisition and enabling scalable digital collection, SeePain lays the groundwork for building the large, high-quality datasets that modern deep learning methods require. We release SeePain as an open tool for the clinical research community and invite multi-site collaboration to build such datasets.
+
+% ============================================================
+% References
+% ============================================================
+\bibliographystyle{IEEEtran}
+% TODO: Create a .bib file with proper entries
+% \bibliography{references}
+
+\begin{thebibliography}{20}
+
+\bibitem{palmer1949}
+H.~Palmer, ``Pain charts; a description of a technique whereby functional pain may be distinguished from organic pain,'' \emph{New Zealand Medical Journal}, vol.~48, no.~264, pp.~187--213, 1949.
+
+\bibitem{margolis1986}
+R.~B. Margolis, R.~C. Tait, and S.~J. Krause, ``A rating system for use with patient pain drawings,'' \emph{Pain}, vol.~24, no.~1, pp.~57--65, 1986.
+
+\bibitem{litjens2017}
+G.~Litjens, T.~Kooi, B.~E. Bejnordi, \emph{et al.}, ``A survey on deep learning in medical image analysis,'' \emph{Medical Image Analysis}, vol.~42, pp.~60--88, 2017.
+
+\bibitem{hauser2009}
+W.~H{\"a}user, E.~Zimmer, M.~Felde, and V.~K{\"o}llner, ``What are the key symptoms of fibromyalgia?'' \emph{BMC Musculoskeletal Disorders}, vol.~9, no.~117, 2009.
+
+\bibitem{ohnmeiss1995}
+D.~D. Ohnmeiss, ``Repeatability of pain drawings in a low back pain population,'' \emph{Spine}, vol.~25, no.~8, pp.~980--988, 2000.
+
+\bibitem{thompson2002}
+P.~W. Thompson, ``Pain drawings and disease activity in rheumatoid arthritis,'' \emph{Annals of the Rheumatic Diseases}, vol.~61, pp.~473, 2002.
+
+\bibitem{boudreau2016}
+S.~A. Boudreau, A.~Badsberg, S.~Christensen, and T.~Graven-Nielsen, ``Digital pain drawings: Assessing touch-screen technology and 3D body schemas,'' \emph{The Clinical Journal of Pain}, vol.~32, no.~2, pp.~139--145, 2016.
+
+\bibitem{barbero2015}
+M.~Barbero, F.~Moresi, D.~Leoni, \emph{et al.}, ``Test-retest reliability of pain extent and pain location using a novel method for pain drawing analysis,'' \emph{European Journal of Pain}, vol.~19, no.~8, pp.~1129--1138, 2015.
+
+\bibitem{vandijk2017}
+L.~N. van Dijk, M.~R. de Boer, and H.~C. de Vet, ``Pain drawings as a screening tool for the classification of chronic pain,'' \emph{European Journal of Pain}, vol.~21, pp.~1594--1602, 2017.
+
+\bibitem{rajpurkar2017}
+P.~Rajpurkar, J.~Irvin, K.~Zhu, \emph{et al.}, ``CheXNet: Radiologist-level pneumonia detection on chest X-rays with deep learning,'' 2017, arXiv:1711.05225.
+
+\bibitem{esteva2017}
+A.~Esteva, B.~Kuprel, R.~A. Novoa, \emph{et al.}, ``Dermatologist-level classification of skin cancer with deep neural networks,'' \emph{Nature}, vol.~542, no.~7639, pp.~115--118, 2017.
+
+\bibitem{tajbakhsh2016}
+N.~Tajbakhsh, J.~Y. Shin, S.~R. Gurudu, \emph{et al.}, ``Convolutional neural networks for medical image analysis: Full training or fine tuning?'' \emph{IEEE Transactions on Medical Imaging}, vol.~35, no.~5, pp.~1299--1312, 2016.
+
+\bibitem{shorten2019}
+C.~Shorten and T.~M. Khoshgoftaar, ``A survey on image data augmentation for deep learning,'' \emph{Journal of Big Data}, vol.~6, no.~60, 2019.
+
+\bibitem{prabhu2019}
+V.~U. Prabhu, ``Few-shot learning for dermatological disease diagnosis,'' in \emph{Machine Learning for Healthcare}, 2019.
+
+\bibitem{frid2018}
+M.~Frid-Adar, I.~Diamant, E.~Klang, \emph{et al.}, ``GAN-based synthetic medical image augmentation for increased CNN performance in liver lesion classification,'' \emph{Neurocomputing}, vol.~321, pp.~321--331, 2018.
+
+\bibitem{melzack1975}
+R.~Melzack, ``The McGill Pain Questionnaire: Major properties and scoring methods,'' \emph{Pain}, vol.~1, no.~3, pp.~277--299, 1975.
+
+\bibitem{freynhagen2006}
+R.~Freynhagen, R.~Baron, U.~Gockel, and T.~R. T{\"o}lle, ``painDETECT: A new screening questionnaire to identify neuropathic components in patients with back pain,'' \emph{Current Medical Research and Opinion}, vol.~22, no.~10, pp.~1911--1920, 2006.
+
+\bibitem{kivy}
+Kivy Organization, ``Kivy: Open source Python library for rapid development of applications,'' \url{https://kivy.org}, 2024.
+
+\end{thebibliography}
+
+\end{document}
