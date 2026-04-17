@@ -9,6 +9,10 @@ def plot_training_results(history, config, train_size, val_size,
 
     dataset_name = config["data"]["dataset_name"]
     model_name = config["model"]["name"]
+    crop_config = config["data"].get("crop", {})
+    crop_text = "off"
+    if crop_config.get("enabled", False):
+        crop_text = f"{crop_config.get('position', 'unknown')} {crop_config.get('percent', 0)}%"
 
     base_name = f"{dataset_name}_num_classes_{num_classes}_{model_name}"
 
@@ -27,6 +31,7 @@ def plot_training_results(history, config, train_size, val_size,
         f"Train: {train_size}\n"
         f"Val: {val_size}\n"
         f"Model: {config['model']['name']}\n"
+        f"Crop: {crop_text}\n"
     )
 
     # ==========================

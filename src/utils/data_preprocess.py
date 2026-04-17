@@ -37,6 +37,76 @@ class FastTensorDataset(Dataset):
         return tensor, label
 
 
+def get_crop_settings(config):
+    crop_config = config["data"].get("crop", {})
+    enabled = crop_config.get("enabled", False)
+    position = crop_config.get("position")
+    percent = crop_config.get("percent", 0)
+    preview_enabled = crop_config.get("preview_enabled", False)
+
+    if not enabled:
+        return {
+            "enabled": False,
+            "position": None,
+            "percent": 0,
+            "preview_enabled": False,
+        }
+
+    if position not in {"top", "bottom"}:
+        raise ValueError("data.crop.position must be either 'top' or 'bottom'")
+
+    if not isinstance(percent, (int, float)):
+        raise ValueError("data.crop.percent must be a number between 0 and 100")
+
+    if percent < 0 or percent >= 100:
+        raise ValueError("data.crop.percent must be in the range [0, 100)")
+
+    return {
+        "enabled": True,
+        "position": position,
+        "percent": float(percent),
+        "preview_enabled": bool(preview_enabled),
+    }
+
+
+def crop_image_by_config(img, crop_settings):
+    if not crop_settings["enabled"] or crop_settings["percent"] == 0:
+        return img
+
+    width, height = img.size
+    rows_to_remove = int(height * (crop_settings["percent"] / 100.0))
+
+    if rows_to_remove <= 0:
+        return img
+
+    if rows_to_remove >= height:
+        raise ValueError("Crop removes the full image height. Reduce data.crop.percent.")
+
+    if crop_settings["position"] == "top":
+        crop_box = (0, rows_to_remove, width, height)
+    else:
+        crop_box = (0, 0, width, height - rows_to_remove)
+
+    return img.crop(crop_box)
+
+
+def show_crop_preview(img, crop_settings, image_path):
+    if not crop_settings["preview_enabled"]:
+        return
+
+    plt.ion()
+    fig, ax = plt.subplots(figsize=(5, 8))
+    preview_img = img.convert("RGB") if img.mode != "RGB" else img
+    ax.imshow(preview_img)
+    ax.set_title(
+        f"Cropped preview: {crop_settings['position']} {crop_settings['percent']:.1f}%\n"
+        f"{Path(image_path).name}"
+    )
+    ax.axis("off")
+    plt.show(block=False)
+    plt.pause(0.001)
+
+
 # ==============================
 # 🔹 MAIN PROCESSING PIPELINE
 # ==============================
@@ -66,6 +136,13 @@ def process_dataset(config):
     use_transforms = config["data"].get("use_transforms", True)
     show_unique_res = config["data"].get("show_unique_res", False)
     img_size = config["data"]["img_size"]
+    crop_settings = get_crop_settings(config)
+
+    if crop_settings["enabled"]:
+        print(
+            f"✂️ Cropping {crop_settings['percent']:.1f}% from the "
+            f"{crop_settings['position']} of each image before resizing"
+        )
 
     # =========================
     # STEP 4: UNDERSAMPLING
@@ -87,6 +164,7 @@ def process_dataset(config):
     # STEP 6: PROCESS + SAVE
     # =========================
     unique_res = {}  # store original images for unique resolutions
+    crop_preview_shown = False
     for label, files in class_to_files.items():
 
         class_dir = processed_root / str(label)
@@ -102,6 +180,12 @@ def process_dataset(config):
             res = img.size + (len(img.getbands()),)  # (width, height, channels)
             if res not in unique_res:
                 unique_res[res] = img
+
+            img = crop_image_by_config(img, crop_settings)
+
+            if crop_settings["preview_enabled"] and not crop_preview_shown:
+                show_crop_preview(img, crop_settings, fpath)
+                crop_preview_shown = True
 
             # Grayscale conversion
             if to_grayscale:
@@ -145,6 +229,8 @@ def process_dataset(config):
         processed_res = []
         for res, orig_img in unique_res.items():
             img = orig_img
+
+            img = crop_image_by_config(img, crop_settings)
 
             # Process conversion same as preprocessing
             if to_grayscale:

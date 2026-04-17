@@ -1,8 +1,9 @@
 data:
   # 🔹 RAW DATA LOCATION (used by data_loader.py)
   base_dir: "data/processed"
-  dataset: "mhh/schmerzzeichnungen/seepain data latest version/classes/"
-  dataset_name: "mhh_seepain"
+  dataset: "aachen/old datasets from Pain2D - PROMM and FSHD/old datasets from Pain2D - PROMM and FSHD"
+  dataset_name: "aachen_old_dataset_cropped"
+
 
   # 🔹 WHERE PROCESSED TENSORS WILL BE SAVED
   processed_dir: "data/processed/processed_tensors"
@@ -24,13 +25,18 @@ data:
   use_transforms: true        # ✅ resize
   use_undersample: true       # ✅ balance dataset
   show_unique_res: false
+  crop:
+    enabled: true
+    position: "bottom"           # "top" or "bottom"
+    percent: 20               # percent of image height to remove before resizing
+    preview_enabled: false    # show one cropped image without stopping preprocessing
 
   # =========================
   # 🔥 TRAINING PIPELINE FLAGS
   # =========================
   use_weighted_sampler: false # applied after loading tensors
 
-  use_processed_tensors: true
+  use_processed_tensors: false
 
 
 training:
@@ -41,4 +47,4 @@ training:
 
 model:
   type: "fcnn"
-  name: "FCNNSmall"
+  name: "FCNNNet"

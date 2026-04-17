@@ -32,3 +32,7 @@ nuf.py
 *.toc
 *.fls
 *.fdb_latexmk
+
+# Temporary browser conversion directories
+.edge_tmp*/
+.edge_tight*/

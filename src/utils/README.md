@@ -8,7 +8,7 @@ This directory contains utility modules for dataset loading, preprocessing, and 
   Loads the raw image dataset from the configured directory. Maps class folders to image file paths, supports excluding specific class folders, and returns a dictionary mapping class indices to image file lists.
 
 - `data_preprocess.py`  
-  Implements the main preprocessing pipeline. Uses `data_loader.py` to load raw data, applies transformations (resize, grayscale, etc.), balances classes if needed, saves processed tensors, and splits the dataset into training and validation sets.
+  Implements the main preprocessing pipeline. Uses `data_loader.py` to load raw data, applies transformations (crop, resize, grayscale, etc.), balances classes if needed, saves processed tensors, and splits the dataset into training and validation sets.
 
 - `load_processed_dataset.py`  
   Loads the preprocessed tensor datasets and creates PyTorch DataLoaders for training and validation, ready for use in model training scripts.
@@ -27,7 +27,7 @@ This directory contains utility modules for dataset loading, preprocessing, and 
 ## Configuration
 
 - All scripts use a YAML configuration file (e.g., `experiments/configs/aachen.yaml`) to specify dataset paths, preprocessing options, and training parameters.
-- Update the config file to change dataset location, image size, batch size, preprocessing flags, and other options.
+- Update the config file to change dataset location, image size, batch size, preprocessing flags, crop settings, and other options.
 
 ## Usage
 

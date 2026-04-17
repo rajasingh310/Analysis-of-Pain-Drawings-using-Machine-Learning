@@ -10,8 +10,9 @@ from shutil import copy2
 project_root = Path(__file__).resolve().parent.parent
 
 # Paths
-RAW_DIR = project_root / "data" / "raw"
-PROCESSED_DIR = project_root / "data" / "processed"
+RAW_DIR = project_root / "data" / "raw" / "aachen" / "old datasets from Pain2D - PROMM and FSHD"
+
+PROCESSED_DIR = project_root / "data" / "processed" / "aachen" / "old datasets from Pain2D - PROMM and FSHD"
 
 # Create processed directory if it doesn't exist
 PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
